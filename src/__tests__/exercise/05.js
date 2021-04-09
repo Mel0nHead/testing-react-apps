@@ -55,11 +55,21 @@ test(`not providing a username should show an error`, async () => {
   `)
 })
 
-test.only(`should handle 500 error`, async () => {
+test(`should handle 500 error`, async () => {
   server.use(
-    rest.post('https://auth-provider.example.com/api/login', async (_, res) => {
-      return res.networkError('Failed to connect')
-    }),
+    rest.post(
+      'https://auth-provider.example.com/api/login',
+      async (req, res, ctx) => {
+        const {username} = req.body
+
+        return res(
+          ctx.status(500),
+          ctx.json({
+            errorMessage: `User '${username}' not found`,
+          }),
+        )
+      },
+    ),
   )
 
   render(<Login />)
@@ -70,5 +80,6 @@ test.only(`should handle 500 error`, async () => {
 
   userEvent.click(screen.getByRole('button', {name: /submit/i}))
   await waitForElementToBeRemoved(() => screen.getByLabelText(/loading/i))
-  screen.debug()
+
+  expect(screen.getByRole('alert')).toBeInTheDocument()
 })
